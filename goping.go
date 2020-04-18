@@ -32,11 +32,21 @@ func main() {
 	var ttl int
 	flag.IntVar(&ttl, "ttl", 64, "set IP Time To Live")
 
+	quiet := flag.Bool("q", false, "Quiet output. Nothing is displayed except summary when finished.")
+	html := flag.Bool("html", false, "Save HTML Output (ping statistic)")
+
 	flag.Parse()
 
 	plainTarget := ""
 
 	argsWithoutProg := os.Args[1:]
+
+	if len(argsWithoutProg) == 0 {
+		fmt.Println("usage: ./goping google.com")
+		fmt.Println("usage: ./goping -i 2 -t 3 -html google.com")
+		flag.PrintDefaults()
+		os.Exit(1)
+	}
 
 	for _, arg := range argsWithoutProg {
 		if arg == "help" {
@@ -95,19 +105,28 @@ func main() {
 		<-sigs
 		elapsed := time.Since(start)
 		// print header
-		fmt.Printf("--- %v ping statistics ---\n", p.Target)
+		fmt.Printf("\n--- %v ping statistics ---\n", p.Target)
 		// calculate loss
 		loss := 100 - (p.Success / p.Sequence * 100)
 		fmt.Printf("%v packets transmitted, %v received, %v%% packet loss, time %s\n", p.Sequence, p.Success, loss, elapsed)
 		// calculate RTT Information
 		min, max := helper.MinMax(p.RRT)
-		//
+		// calculate average RTT
 		var total int64 = 0
 		for _, value := range p.RRT {
 			total += value
 		}
 		avg := total / int64(len(p.RRT))
-		fmt.Printf("rtt min/avg/max = %v/%v/%v ms\n", min, avg, max)
+		fmt.Printf("rtt min/avg/max = %v/%v/%v ms\n", min/1000, avg/1000, max/1000)
+		// generate HTML Output if html option was called
+		if *html {
+			filename, err := helper.GenHTML(p.Target, p.RRT, p.Sequence, start)
+			if err != nil {
+				fmt.Println("Failed to save HTML Output file, reason : %v", err.Error())
+			} else {
+				fmt.Println("successfully saved html files in : " + filename)
+			}
+		}
 		os.Exit(0)
 	}()
 
@@ -122,11 +141,30 @@ func main() {
 			done <- true
 		}()
 
+	G:
 		select {
 		case <-done:
+			if *quiet {
+				break G
+			}
 			data := <-res
-			fmt.Printf("%v bytes from %v: icmp_seq=%v ttl=%v time=%s\n", data.PayloadSize, p.IPAddress, p.Sequence, data.UsedTTL, data.RTT)
+			// incrase/decrease RRT percetage
+			percentChange := float64(0)
+			if len(p.RRT) > 1 {
+				// current request RTT in milliseconds
+				reqMS := data.RTT.Microseconds()
+				before := p.RRT[len(p.RRT)-2]
+				percentChange = helper.PercentageChange(before, reqMS)
+			}
+			diff := fmt.Sprintf("%f", percentChange)
+			if percentChange > 0 {
+				diff = "+" + diff
+			}
+			fmt.Printf("%v bytes from %v: icmp_seq=%v ttl=%v time=%s \t [%v%%]\n", data.PayloadSize, p.IPAddress, p.Sequence, data.UsedTTL, data.RTT, diff)
 		case <-time.After(time.Duration(timeout) * time.Second):
+			if *quiet {
+				break G
+			}
 			fmt.Printf("From %v icmp_seq=%v Destination Host Unreachable\n", p.IPAddress, p.Sequence)
 		}
 

@@ -37,3 +37,14 @@ func MinMax(array []int64) (int64, int64) {
 	}
 	return min, max
 }
+
+// PercentageChange https://www.socketloop.com/tutorials/golang-calculate-percentage-change-of-two-values
+// if reqMS > before
+// 	addStatus = "+"
+// 	add = reqMS / before * 100
+// 	fmt.Println(add)
+func PercentageChange(old, new int64) (delta float64) {
+	diff := float64(new - old)
+	delta = (diff / float64(old)) * 100
+	return
+}

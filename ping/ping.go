@@ -4,6 +4,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"strings"
 	"time"
 
 	"golang.org/x/net/icmp"
@@ -46,6 +47,9 @@ type Ping struct {
 
 	// Success store total succeed ICMP Request
 	Success int
+
+	// Failed store total failed ICMP Request
+	Failed int
 
 	// Target are plain user-input that only allow domain names and
 	// IP Address (IPv4/IPv6)
@@ -100,6 +104,7 @@ func (p *Ping) Ping() PingResult {
 	wb, err := wm.Marshal(nil)
 	if err != nil {
 		log.Println(err)
+		p.Failed++
 		return result
 	}
 
@@ -107,6 +112,7 @@ func (p *Ping) Ping() PingResult {
 	start := time.Now()
 	if _, err := c.WriteTo(wb, &net.UDPAddr{IP: net.ParseIP(p.IPAddress), Zone: "en0"}); err != nil {
 		log.Println(err)
+		p.Failed++
 		return result
 	}
 
@@ -114,6 +120,7 @@ func (p *Ping) Ping() PingResult {
 	n, _, err := c.ReadFrom(rb)
 	if err != nil {
 		log.Println(err)
+		p.Failed++
 		return result
 	}
 	// save when we got the __call back__ from target
@@ -122,14 +129,18 @@ func (p *Ping) Ping() PingResult {
 	rm, err := icmp.ParseMessage(p.ProtocolNumber, rb[:n])
 	if err != nil {
 		log.Println(err)
+		p.Failed++
 		return result
 	}
 
-	retPayloadSize := rm.Body.Len(p.ProtocolNumber)
-	usedTTL, _ := c.IPv4PacketConn().TTL()
+	usedTTL := 0
+	retPayloadSize := 0
 
-	// if target is a IPv6
-	if p.ProtocolNumber == 58 {
+	if p.ProtocolNumber == 1 {
+		retPayloadSize = rm.Body.Len(p.ProtocolNumber)
+		usedTTL, _ = c.IPv4PacketConn().TTL()
+	} else {
+		// if target is a IPv6
 		retPayloadSize = rm.Body.Len(58)
 		usedTTL, _ = c.IPv6PacketConn().HopLimit()
 	}
@@ -137,10 +148,16 @@ func (p *Ping) Ping() PingResult {
 	result.UsedTTL = usedTTL
 	result.RTT = elapsed
 	result.PayloadSize = retPayloadSize
-	// result.Message = rm.Body.Data
+	result.Message = rb
 	result.Success = true
 
-	p.RRT = append(p.RRT, elapsed.Milliseconds())
+	// missunderstand
+	if strings.Contains(string(rb[:n]), "time exceeded") {
+		// fmt.Println("must uwu")
+		// fmt.Println(string(rb))
+	}
+
+	p.RRT = append(p.RRT, elapsed.Microseconds())
 
 	p.Success++
 
