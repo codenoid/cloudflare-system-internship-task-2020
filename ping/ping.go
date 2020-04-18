@@ -139,7 +139,6 @@ func (p *Ping) Ping() PingResult {
 	result.RTT = elapsed
 	result.PayloadSize = retPayloadSize
 	result.Message = rb
-	result.Success = true
 
 	// missunderstand
 	if strings.Contains(string(rb[:n]), "time exceeded") {
