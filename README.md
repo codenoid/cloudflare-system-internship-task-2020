@@ -2,6 +2,8 @@
 
 ping implementation in Go based on golang.org/x/net/icmp as part [Cloudflare Internship Task](https://github.com/cloudflare-internship-2020/internship-application-systems)
 
+![HTML Output example](output-example/html-output-example.png)
+
 ## Building
 
 1. Make sure Go already installed on your machine
