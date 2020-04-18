@@ -25,3 +25,8 @@ usage: ./goping -i 2 -t 3 -html google.com
   -ttl int
     	set IP Time To Live (default 64)
 ```
+
+## Troubleshooting
+
+Q: socket: permission denied
+A: run ./goping as sudo or `sudo sysctl -w net.ipv4.ping_group_range="0 2147483647"`
