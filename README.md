@@ -14,6 +14,8 @@ ping implementation in Go based on golang.org/x/net/icmp as part [Cloudflare Int
 ```
 $ ./goping
 usage: ./goping google.com
+usage: ./goping -i 2 -t 3 127.0.0.1
+usage: ./goping ::1
 usage: ./goping -i 2 -t 3 -html google.com
   -html
     	Save HTML Output (ping statistic)
