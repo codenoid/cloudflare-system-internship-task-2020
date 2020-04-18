@@ -45,12 +45,6 @@ type Ping struct {
 	// Sequence store current instance ping sequence
 	Sequence int
 
-	// Success store total succeed ICMP Request
-	Success int
-
-	// Failed store total failed ICMP Request
-	Failed int
-
 	// Target are plain user-input that only allow domain names and
 	// IP Address (IPv4/IPv6)
 	Target string
@@ -104,7 +98,6 @@ func (p *Ping) Ping() PingResult {
 	wb, err := wm.Marshal(nil)
 	if err != nil {
 		log.Println(err)
-		p.Failed++
 		return result
 	}
 
@@ -112,7 +105,6 @@ func (p *Ping) Ping() PingResult {
 	start := time.Now()
 	if _, err := c.WriteTo(wb, &net.UDPAddr{IP: net.ParseIP(p.IPAddress), Zone: "en0"}); err != nil {
 		log.Println(err)
-		p.Failed++
 		return result
 	}
 
@@ -120,7 +112,6 @@ func (p *Ping) Ping() PingResult {
 	n, _, err := c.ReadFrom(rb)
 	if err != nil {
 		log.Println(err)
-		p.Failed++
 		return result
 	}
 	// save when we got the __call back__ from target
@@ -129,7 +120,6 @@ func (p *Ping) Ping() PingResult {
 	rm, err := icmp.ParseMessage(p.ProtocolNumber, rb[:n])
 	if err != nil {
 		log.Println(err)
-		p.Failed++
 		return result
 	}
 
@@ -158,8 +148,6 @@ func (p *Ping) Ping() PingResult {
 	}
 
 	p.RRT = append(p.RRT, elapsed.Microseconds())
-
-	p.Success++
 
 	return result
 }

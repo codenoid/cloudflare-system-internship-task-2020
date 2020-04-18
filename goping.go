@@ -107,8 +107,8 @@ func main() {
 		// print header
 		fmt.Printf("\n--- %v ping statistics ---\n", p.Target)
 		// calculate loss
-		loss := 100 - (p.Success / p.Sequence * 100)
-		fmt.Printf("%v packets transmitted, %v received, %v%% packet loss, time %s\n", p.Sequence, p.Success, loss, elapsed)
+		loss := 100 - (len(p.RRT) / p.Sequence * 100)
+		fmt.Printf("%v packets transmitted, %v received, %v%% packet loss, time %s\n", p.Sequence, len(p.RRT), loss, elapsed)
 		// calculate RTT Information
 		min, max := helper.MinMax(p.RRT)
 		// calculate average RTT
