@@ -124,14 +124,12 @@ func (p *Ping) Ping() PingResult {
 	}
 
 	usedTTL := 0
-	retPayloadSize := 0
+	retPayloadSize := rm.Body.Len(p.ProtocolNumber)
 
 	if p.ProtocolNumber == 1 {
-		retPayloadSize = rm.Body.Len(p.ProtocolNumber)
 		usedTTL, _ = c.IPv4PacketConn().TTL()
 	} else {
 		// if target is a IPv6
-		retPayloadSize = rm.Body.Len(58)
 		usedTTL, _ = c.IPv6PacketConn().HopLimit()
 	}
 
